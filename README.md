@@ -14,9 +14,9 @@ It should first contain an array that has all the points in time (in seconds) nu
 Then it should contain an array of the fluctuation in thl at all these points in time and all positions.  
 Then it should contain an array of the fluctuation in qt at all these points in time and all positions.  
 So:  
-t(tn)  
-thl_acc(tn,k,j,i)  
-qt_acc(tn,k,j,i)  
+``t(tn)``  
+``thl_acc(tn,k,j,i)``  
+``qt_acc(tn,k,j,i)``  
 
 The 'namoptions' used in DALES nudging are (the full 'namoptions' file I used for my reference run can also be found in this repository):
 
@@ -40,8 +40,8 @@ The provided subroutine 'modnudge.f90' gives the nudging subroutine for general 
 
 Using the persistence method in DALES is straightforward. It needs an input file called 'advfield.inp.iexpnr', containing the fields of 'thl' and 'qt' to be advected. An example python script to create this file is given in 'input_Pers_or_RefCold.py'.  
 So, the file contains:  
-thl(k,j,i)  
-qt(k,j,i)  
+``thl(k,j,i)``  
+``qt(k,j,i)``  
 
 Additionally, one should give the desired mean horizontal wind speeds at each height in 'prof.inp.iexpnr', as in standard DALES.  
 The only input in 'namoptions' is given in the &PHYSICS block:
