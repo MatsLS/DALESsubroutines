@@ -9,7 +9,7 @@ In this document, it is described how to use the newly added inputs to 'namoptio
 
 1D-nudging already existed in DALES, 3D-nudging was added. 3D-nudging is currently only applied to thl and qt. 1D-nudging requires an input file called 'nudge.inp.iexpnr', where iexpnr is the experiment number in namoptions.  
 This file should contain the desired vertical mean profiles at the desired times. This is standard DALES so will not be elaborated on here.  
-3D-nudging also requires an input file: 'nudge3D.inp.iexpnr'. This should be a binary Fortran file (see nudgeinputfiles.py for an example of how to create these).  
+3D-nudging also requires an input file: 'nudge3D.inp.iexpnr'. This should be a binary Fortran file (see 'nudgeinputfiles.py' for an example of how to create these).  
 It should first contain an array that has all the points in time (in seconds) nudging should be done towards.  
 Then it should contain an array of the fluctuation in thl at all these points in time and all positions.  
 Then it should contain an array of the fluctuation in qt at all these points in time and all positions.  
@@ -33,7 +33,7 @@ ntnudge3D     = 12           # Amount of time points for which desired nudge fie
 /
 ```
 
-The provided subroutine 'modnudge.f90' gives the nudging subroutine for general use. In 'modnudge_large.f90', the input file 'nudge.inp.iexpnr' became to large and was hardcoded to use two input files. This could be improved upon for later versions.
+The provided subroutine 'modnudge.f90' gives the nudging subroutine for general use. In 'modnudge_large.f90', the input file 'nudge.inp.iexpnr' became too large and was hardcoded to use a smaller input file. This could be improved upon for later versions.
 
 ## Persistence or advection only method
 *Adapted subroutines: 'modstartup.f90', 'modglobal.f90', 'tstep.f90'*
