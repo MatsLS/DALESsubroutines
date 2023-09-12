@@ -28,21 +28,13 @@ The 'namoptions' used in DALES nudging are (the full 'namoptions' file I used fo
 
 &NAMNUDGE
 lnudge        = .false.      # Indicate whether nudging should be used in the experiment (true = use, false = do not use)
-
 knudgestart   = 1            # Lower height limit for nudging (index)
-
 knudgestop    = 79           # Upper height limit for nudging (index)
-
 t3Dnudgefac   = 10           # Nudging time scale for 3D nudging (s)
-
 t1Dnudgefac   = 10           # Nudging time scale for 1D nudging (s)
-
 tnudgestop    = 7200         # Time at which to deactivate nudging (s) 
-
 tnudgestart   = 0            # Time at which to activate nudging (s)
-
 ntnudge3D     = 12           # Amount of time points for which desired nudge fields are given (tn in the above)
-
 /
 
 The provided subroutine 'modnudge.f90' gives the nudging subroutine for general use. In 'modnudge_large.f90', the input file 'nudge.inp.iexpnr' became to large and was hardcoded to use two input files. This could be improved upon for later versions.
