@@ -11,6 +11,7 @@
 !!
 !!  \author Chiel van Heerwaarden, Wageningen University
 !!  \author Thijs Heus,MPI-M
+!!  \author Mats Steerneman (MS)
 !! \see Wicker and Skamarock 2002
 !!  \par Revision list
 !  This file is part of DALES.
@@ -176,7 +177,7 @@ end subroutine tstep_update
 subroutine tstep_integrate
 
 
-  use modglobal, only : rdt,rk3step,e12min,ladvectonly
+  use modglobal, only : rdt,rk3step,e12min,ladvectonly !MS: extract ladvectonly
   use modfields, only : u0,um,up,v0,vm,vp,w0,wm,wp,&
                         thl0,thlm,thlp,qt0,qtm,qtp,&
                         e120,e12m,e12p,sv0,svm,svp
@@ -188,39 +189,39 @@ subroutine tstep_integrate
   rk3coef = rdt / (4. - dble(rk3step))
 
   if(rk3step /= 3) then
-     if (ladvectonly) then
+     if (ladvectonly) then !MS: when using persistence method, u and v are constant. w is zero constantly. thl and qt change only by advection
        u0   = um  ! + rk3coef * up
        v0   = vm  ! + rk3coef * vp
        w0   = wm  ! + rk3coef * wp
-       thlp = 0
+       thlp = 0 !MS: set thl and qt tendencies to zero again
        qtp  = 0
       ! e120 = e12m
-       call advection
+       call advection !MS: only allow advection to change tendencies of thl and qt (thlp and qtp)
      end if
-     if (.not. ladvectonly) then
+     if (.not. ladvectonly) then !MS: if ladvectonly = false, let u,v,w change as normal
        u0   = um   + rk3coef * up
        v0   = vm   + rk3coef * vp
        w0   = wm   + rk3coef * wp
        !e120 = max(e12min,e12m + rk3coef * e12p)
      end if
-     thl0 = thlm + rk3coef * thlp
+     thl0 = thlm + rk3coef * thlp !MS: thl and qt change as normal anyways
      qt0  = qtm  + rk3coef * qtp
      sv0  = svm  + rk3coef * svp
      e120 = max(e12min,e12m + rk3coef * e12p)
   else ! step 3 - store result in both ..0 and ..m
-     if (ladvectonly) then
+     if (ladvectonly) then !MS: if ladvectonly = true, do not allow changes in u,v,q
        um   = um  ! + rk3coef * up
        u0 = um
        vm   = vm  ! + rk3coef * vp
        v0 = vm
        wm   = wm  ! + rk3coef * wp
        w0 = wm
-       thlp = 0
+       thlp = 0 !MS: set thl and qt tendencies to zero again
        qtp  = 0
        !e120 = e12m
-       call advection
+       call advection !MS: only allow advection to change tendencies of thl and qt (thlp and qtp)
      end if
-     if (.not. ladvectonly) then
+     if (.not. ladvectonly) then !MS: if ladvectonly = false, let u,v,w change as normal
        um   = um   + rk3coef * up
        u0 = um
        vm   = vm   + rk3coef * vp
@@ -230,7 +231,7 @@ subroutine tstep_integrate
        !e12m = max(e12min,e12m + rk3coef * e12p)
        !e120 = e12m
      end if
-     thlm = thlm + rk3coef * thlp
+     thlm = thlm + rk3coef * thlp !MS: thl and qt change as normal anyways
      thl0 = thlm
      qtm  = qtm  + rk3coef * qtp
      qt0  = qtm
