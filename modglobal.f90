@@ -105,8 +105,8 @@ save
       logical :: lrigidlid = .false. !< switch to enable simulations with a rigid lid
       real    :: unudge = 1.0   !< Nudging factor if igrw_damp == -1 (nudging mean wind fields to geostrophic values provided by lscale.inp)
 
-      logical :: ladvectonly = .false.  !< switch for using advection only. requires an additional input file for the initial fields of thl and qt.
-      logical :: lcoldstartfiles = .false. !< switch to provide user specified input fields for the initial fields instead of randomnization.
+      logical :: ladvectonly = .false.  !< MS: switch for using advection only. requires an additional input file for the initial fields of thl and qt.
+      logical :: lcoldstartfiles = .false. !< MS: switch to provide user-specified input fields for the initial fields instead of randomization.
 
       !Base state
       integer :: ibas_prf = 3
