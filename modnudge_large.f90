@@ -37,47 +37,38 @@ implicit none
 PRIVATE
 PUBLIC :: initnudge, nudge,exitnudge
 SAVE
-  real(kind=8), dimension(:,:,:,:), allocatable :: thlnudge3D,qtnudge3D!,unudge3D,vnudge3D,wnudge3D !these arrays
-                                  !contain the 3D fields to be nudged towards, as given in nudge3D.inp.iexpnr.
-  real, dimension(:,:)  , allocatable :: tnudge,unudge1D,vnudge1D,wnudge1D,thlnudge1D,qtnudge1D !these arrays
-                                  !contain the 1D profiles to be nudged towards, as given in nudge.inp.iexpnr. 
-  real, dimension(:,:)  , allocatable :: t1Dnudge,t3Dnudge !these arrays are the nudging time scales for 1D and 
-                                  !3D nudging.
+  real(kind=8), dimension(:,:,:,:), allocatable :: thlnudge3D,qtnudge3D!,unudge3D,vnudge3D,wnudge3D !MS: these arrays contain the 3D fields to be nudged towards, as given in nudge3D.inp.iexpnr.
+  real, dimension(:,:)  , allocatable :: tnudge,unudge1D,vnudge1D,wnudge1D,thlnudge1D,qtnudge1D !MS: these arrays contain the 1D profiles to be nudged towards, as given in nudge.inp.iexpnr (standard DALES). 
+  real, dimension(:,:)  , allocatable :: t1Dnudge,t3Dnudge !MS: these arrays are the nudging time scales for 1D and 3D nudging.
   real, dimension(:)    , allocatable :: timenudge
   real(kind = 8), dimension(:) , allocatable :: tnudgearr
 
-  real :: t1Dnudgefac = 10.                    !multiplication factor for the nudging time of 1D tendency.
-  real :: t3Dnudgefac = 10.                    !multiplication factor for the nudging time of 3D tendency.
-  real :: tnudgestop = 7200.                   !nudging only takes place before this time.
-  real :: tnudgestart = 0.                     !nudging only takes place after this time.
+  real :: t1Dnudgefac = 10.                    !MS: multiplication factor for the nudging time of 1D tendency. (default = 10s)
+  real :: t3Dnudgefac = 10.                    !MS: multiplication factor for the nudging time of 3D tendency. (default = 10s)
+  real :: tnudgestop = 7200.                   !MS: nudging only takes place before this time. (default = 7200s)
+  real :: tnudgestart = 0.                     !MS: nudging only takes place after this time. (default = 0s)
 
-  logical :: lnudge = .false.                  !boolean given in namoptions that dictates if the run has nudging.
-  logical :: lunudge1D,lvnudge1D,lwnudge1D,lthlnudge1D,lqtnudge1D !booleans that dictate if a variable should
-                                                                  !have 1D nudging.
-  logical :: lthlnudge3D,lqtnudge3D,end_of_file!,lunudge3D,lvnudge3D,lwnudge3D !booleans that dictate if a variable
-                                                                              !should have 3D nudging.
+  logical :: lnudge = .false.                  !MS: boolean given in namoptions that dictates if the run has nudging (standard DALES).
+  logical :: lunudge1D,lvnudge1D,lwnudge1D,lthlnudge1D,lqtnudge1D !MS: booleans that dictate if a variable should have 1D nudging (standard DALES).
+  logical :: lthlnudge3D,lqtnudge3D,end_of_file!,lunudge3D,lvnudge3D,lwnudge3D !MS: booleans that dictate if a variable should have 3D nudging.
   integer :: ntnudge = 10000
-  integer :: ntnudge3D = 100
-  integer :: knudgestop = 1                    !knudgestop indicates until what level the 3D forcing takes place.
-  integer :: knudgestart = 1                   !knudgestart indicates at what level the 3D forcing starts.
-
+  integer :: ntnudge3D = 10                    !MS: Amount of time points at which desired fields for nudging are provided. (default = 10)
+  integer :: knudgestop = 1                    !MS: knudgestop indicates until what level the 3D forcing takes place. (default = 1)
+  integer :: knudgestart = 1                   !MS: knudgestart indicates at what level the 3D forcing starts. (default = 1)
 contains
   subroutine initnudge
     use modmpi,   only :myid,mpierr,comm3d,mpi_logical,D_MPI_BCAST
-    use modglobal,only :ifnamopt,fname_options,runtime,cexpnr,ifinput,k1,kmax,checknamelisterror,itot,jtot
+    use modglobal,only :ifnamopt,fname_options,runtime,cexpnr,ifinput,k1,kmax,checknamelisterror,itot,jtot !MS: added itot, jtot
     implicit none
     integer :: ierr,k,t,i,j
     logical :: file_exists
     real,allocatable,dimension(:) :: height
     character(1) :: chmess1
     namelist /NAMNUDGE/ &
-       lnudge,knudgestop,t1Dnudgefac,t3Dnudgefac,tnudgestop,knudgestart,tnudgestart,ntnudge3D
-    !allocate(unudge3D(itot,jtot,kmax),vnudge3D(itot,jtot,kmax),wnudge3D(itot,jtot,kmax),&
-    !       thlnudge3D(itot,jtot,kmax),qtnudge3D(itot,jtot,kmax))
-    !allocate(thlnudge3D(itot,jtot,kmax,ntnudge3D),qtnudge3D(itot,jtot,kmax,ntnudge3D))
+       lnudge,knudgestop,t1Dnudgefac,t3Dnudgefac,tnudgestop,knudgestart,tnudgestart,ntnudge3D !MS: Read all (new) inputs
     allocate(tnudge(k1,ntnudge),unudge1D(k1,ntnudge),vnudge1D(k1,ntnudge),wnudge1D(k1,ntnudge),&
            thlnudge1D(k1,ntnudge),qtnudge1D(k1,ntnudge))
-    allocate(t1Dnudge(k1,ntnudge),t3Dnudge(k1,ntnudge))
+    allocate(t1Dnudge(k1,ntnudge),t3Dnudge(k1,ntnudge)) !MS: allocate nudging time scales
     allocate(timenudge(0:ntnudge), height(k1))
     tnudge     =0
     unudge1D   =0
@@ -90,8 +81,8 @@ contains
     !unudge3D   =0
     !vnudge3D   =0
     !wnudge3D   =0
-    thlnudge3D =0
-    qtnudge3D  =0
+    thlnudge3D =0 !MS zero by default
+    qtnudge3D  =0 !MS zero by default
 
     if(myid==0)then
 
@@ -101,6 +92,7 @@ contains
       write(6 ,NAMNUDGE)
       close(ifnamopt)
     end if
+    !MS: Broadcast important variables
     call D_MPI_BCAST(lnudge     , 1,0,comm3d,mpierr)
     call D_MPI_BCAST(knudgestop , 1,0,comm3d,mpierr)
     call D_MPI_BCAST(tnudgestop , 1,0,comm3d,mpierr)
@@ -108,8 +100,8 @@ contains
     call D_MPI_BCAST(knudgestart, 1,0,comm3d,mpierr)
     call D_MPI_BCAST(ntnudge3D  , 1,0,comm3d,mpierr)
 
-    allocate(thlnudge3D(itot,jtot,130,ntnudge3D),qtnudge3D(itot,jtot,130,ntnudge3D))
-    allocate(tnudgearr(ntnudge3D))
+    allocate(thlnudge3D(itot,jtot,130,ntnudge3D),qtnudge3D(itot,jtot,130,ntnudge3D)) !MS: allocate 3D nudging arrays (with fluctuations) hardcoded to only have values until k=130, because of file size.
+    allocate(tnudgearr(ntnudge3D)) !MS: allocate tnudgearr, which contains nudging time points
 
     if (.not. lnudge) return
     if(myid==0) then
@@ -160,36 +152,35 @@ contains
        ! end do
       end do
       close(ifinput)
-      !compute nudging time scales.
+      !MS: compute nudging time scales.
       t1Dnudge = t1Dnudgefac*tnudge
       t3Dnudge = t3Dnudgefac*tnudge
 
-      !read 3D nudge fields.
-      inquire(file='nudge3D.inp.'//cexpnr, exist=file_exists)
+      !MS: read 3D nudge fields.
+      inquire(file='nudge3D.inp.'//cexpnr, exist=file_exists) !MS: check if 3D nudge input file exists
 
-      if (.not. file_exists) then
+      if (.not. file_exists) then !MS: if file does not exist, print this
         write(6,*) 'The input file for the fields to be nudged ', 'nudge3D.inp.'//cexpnr, ' was not found.'
         STOP
       end if
       
-      if (file_exists) then
+      if (file_exists) then !MS: if the file does exist, read its contents
         open(ifinput,file='nudge3D.inp.'//cexpnr,form='unformatted')
         write(*,*) kmax, jtot, itot
 
-        read(ifinput) tnudgearr
+        read(ifinput) tnudgearr !MS: read nudging time points
         !read(ifinput, iostat=ierr) unudge3D
         !read(ifinput) vnudge3D
         !read(ifinput) wnudge3D
-        read(ifinput) thlnudge3D
-        read(ifinput) qtnudge3D
+        read(ifinput) thlnudge3D !MS: read fluctuations in thl
+        read(ifinput) qtnudge3D !MS: read fluctuations in qt
 
         close(ifinput)
-        !write(*,*) 'Error #', ierr
-        write(*,*) thlnudge3D(1,1,1,1)
-        !write(*,*) thlnudge3D(:,:,1)
+        write(*,*) thlnudge3D(1,1,1,1) !MS: print value for checks
       end if
 
     end if
+    !MS: broadcast nudging arrays
     call D_MPI_BCAST(timenudge ,ntnudge+1   ,0,comm3d,mpierr)
     call D_MPI_BCAST(tnudge    ,k1*ntnudge  ,0,comm3d,mpierr)
     call D_MPI_BCAST(t1Dnudge  ,k1*ntnudge  ,0,comm3d,mpierr)
@@ -205,6 +196,7 @@ contains
     call D_MPI_BCAST(tnudgearr ,ntnudge3D     ,0,comm3d,mpierr)
     call D_MPI_BCAST(thlnudge3D,itot*jtot*130*ntnudge3D,0,comm3d,mpierr)
     call D_MPI_BCAST(qtnudge3D ,itot*jtot*130*ntnudge3D,0,comm3d,mpierr)
+    !MS: check nudging booleans: if arrays have any value above 1e-8, nudging is activated, otherwise, it is deactivated for this variable
     lunudge1D   = any(abs(unudge1D)>1e-8)
     lvnudge1D   = any(abs(vnudge1D)>1e-8)
     lwnudge1D   = any(abs(wnudge1D)>1e-8)
@@ -215,6 +207,7 @@ contains
     !lwnudge3D   = any(abs(wnudge3D)>1e-8)
     lthlnudge3D = any(abs(thlnudge3D)>1e-8)
     lqtnudge3D  = any(abs(qtnudge3D)>1e-8)
+    !MS: broadcast booleans
     !call D_MPI_BCAST(lunudge3D   ,1,0,comm3d,mpierr)
     !call D_MPI_BCAST(lvnudge3D   ,1,0,comm3d,mpierr)
     !call D_MPI_BCAST(lwnudge3D   ,1,0,comm3d,mpierr)
@@ -224,7 +217,7 @@ contains
   end subroutine initnudge
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+!MS: completely rewritten from standard DALES
   subroutine nudge
     use modmpi,     only : myidx,myidy,myid
     use modglobal,  only : timee,rtimee,i1,j1,kmax,rdt,itot,jtot,pi,imax,jmax
@@ -236,10 +229,11 @@ contains
     integer is,ie,js,je
     real :: dtm,dtp,currtnudge,dtmn,dtpn
 
-    if (.not.(lnudge)) return
+    if (.not.(lnudge)) return !MS: check if lnudge = true
 !     if (rk3step/=3) return
-    if (timee==0) return
-    
+    if (timee==0) return !MS: nudging not applied if the simulation time = 0
+
+    !MS: determine the nudging time point index
     do ti = 1,ntnudge3D-1
       if (rtimee<tnudgearr(1)) then
         tn = 1
@@ -249,11 +243,13 @@ contains
       end if
     end do
 
+    !MS: determine fractions for use in extrapolation of fields
     if (tn>1) then
       dtmn = ( rtimee-tnudgearr(tn-1) ) / ( tnudgearr(tn)-tnudgearr(tn-1) )
       dtpn = ( tnudgearr(tn)-rtimee)/ ( tnudgearr(tn)-tnudgearr(tn-1) )
     end if
 
+    !MS: standard DALES nudge time point indexing, not used
     t=1
     do while(rtimee>timenudge(t))
       t=t+1
@@ -265,42 +261,43 @@ contains
     dtm = ( rtimee-timenudge(t) ) / ( timenudge(t+1)-timenudge(t) )
     dtp = ( timenudge(t+1)-rtimee)/ ( timenudge(t+1)-timenudge(t) )
 
-    !compute the first and last i and j index for each processor.
+    !MS: compute the first and last i and j index for each processor.
     is = myidx * imax + 1
     ie = is + imax - 1
 
     js = myidy * jmax + 1
     je = js + jmax - 1
 
+    !MS: loop over k values
     do k=1,kmax
       currtnudge   = max(rdt,t1Dnudge(k,t)*dtp+t1Dnudge(k,t+1)*dtm)
-      if (rtimee >= tnudgestart .and. rtimee < tnudgestop) then !only nudging between the specified times.
-        if (k >= knudgestart .and. k < knudgestop) then ! only nudging between specified heights.
-          do j=1,jtot
+      if (rtimee >= tnudgestart .and. rtimee < tnudgestop) then !MS: only apply nudging between the specified times.
+        if (k >= knudgestart .and. k < knudgestop) then !MS: only apply 3D nudging between specified heights.
+          do j=1,jtot !MS: loop over j,i values
             do i=1,itot
               if (i >= is .and. i <= ie .and. &
-                j >= js .and. j <= je) then
-                !3D field nudge.
+                j >= js .and. j <= je) then !MS: check if i,j in the range of used processor
+                !MS: 3D field nudge.
                 !if(lunudge3D) up (i-is+2,j-js+2,k)=up (i-is+2,j-js+2,k)-(u0 (i-is+2,j-js+2,k)-&
                 !    (u0av (k)+unudge3D(i,j,k)))/t3Dnudge (k,t)
                 !if(lvnudge3D) vp (i-is+2,j-js+2,k)=vp (i-is+2,j-js+2,k)-(v0 (i-is+2,j-js+2,k)-&
                 !    (v0av (k)+vnudge3D(i,j,k)))/t3Dnudge (k,t)
                 !if(lwnudge3D) wp (i-is+2,j-js+2,k)=wp (i-is+2,j-js+2,k)-(w0 (i-is+2,j-js+2,k)-&
                 !    (         wnudge3D(i,j,k)))/ti3Dnudge (k,t)
-                if (ntnudge3D==1) then
+                if (ntnudge3D==1) then !MS: no extrapolation for single nudging time point
                   if(lthlnudge3D) thlp (i-is+2,j-js+2,k)=thlp (i-is+2,j-js+2,k)-(thl0 (i-is+2,j-js+2,k)-&
                       (thl0av (k)+thlnudge3D(i,j,k,tn)))/t3Dnudge (k,tn)
                   if(lqtnudge3D) qtp (i-is+2,j-js+2,k)=qtp (i-is+2,j-js+2,k)-(qt0 (i-is+2,j-js+2,k)-&
                       (qt0av (k)+qtnudge3D(i,j,k,tn)))/t3Dnudge (k,tn)
                 end if
-                if (ntnudge3D>1) then
-                  if (tn==1) then
+                if (ntnudge3D>1) then !MS: multiple nudging time points
+                  if (tn==1) then !MS: no extrapolation for first nudging time point
                     if(lthlnudge3D) thlp (i-is+2,j-js+2,k)=thlp (i-is+2,j-js+2,k)-(thl0 (i-is+2,j-js+2,k)-&
                         (thl0av (k)+thlnudge3D(i,j,k,tn)))/t3Dnudge (k,tn)
                     if(lqtnudge3D) qtp (i-is+2,j-js+2,k)=qtp (i-is+2,j-js+2,k)-(qt0 (i-is+2,j-js+2,k)-&
                         (qt0av (k)+qtnudge3D(i,j,k,tn)))/t3Dnudge (k,tn)
                   end if
-                  if (tn>1) then
+                  if (tn>1) then !MS: Extrapolation 3D nudging
                     if(lthlnudge3D) thlp (i-is+2,j-js+2,k)=thlp (i-is+2,j-js+2,k)-(thl0 (i-is+2,j-js+2,k)-&
                         (thl0av (k)+(thlnudge3D(i,j,k,tn-1)*dtpn + thlnudge3D(i,j,k,tn)*dtmn)))/currtnudge
                     if(lqtnudge3D) qtp (i-is+2,j-js+2,k)=qtp (i-is+2,j-js+2,k)-(qt0 (i-is+2,j-js+2,k)-&
@@ -311,27 +308,28 @@ contains
             end do
           end do
         end if
-        !1D profile nudge.
-        if (ntnudge3D==1) then
+        !MS: 1D profile nudge.
+        if (ntnudge3D==1) then !MS: no extrapolation for single nudging time point
           if(lthlnudge1D) thlp (2:i1,2:j1,k)=thlp (2:i1,2:j1,k)-&
                 (thl0av (k)-(thlnudge1D (k,tn)))/t1Dnudge(k,tn)
           if(lqtnudge1D) qtp (2:i1,2:j1,k)=qtp (2:i1,2:j1,k)-&
                 (qt0av (k)-(qtnudge1D (k,tn)))/t1Dnudge(k,tn)
         end if
-        if (ntnudge3D>1) then
-          if (tn == 1) then
+        if (ntnudge3D>1) then !MS: multiple nudging time points
+          if (tn == 1) then !MS: no extrapolation for first nudging time point
             if(lthlnudge1D) thlp (2:i1,2:j1,k)=thlp (2:i1,2:j1,k)-&
                   (thl0av (k)-(thlnudge1D (k,tn)))/t1Dnudge(k,tn)
             if(lqtnudge1D) qtp (2:i1,2:j1,k)=qtp (2:i1,2:j1,k)-&
                   (qt0av (k)-(qtnudge1D (k,tn)))/t1Dnudge(k,tn)
           end if
-          if (tn>1) then
+          if (tn>1) then !MS: Extrapolation 1D nudging
             if(lthlnudge1D) thlp (2:i1,2:j1,k)=thlp (2:i1,2:j1,k)-&
                   (thl0av (k)-(thlnudge1D (k,tn-1)*dtpn+thlnudge1D (k,tn)*dtmn))/currtnudge
             if(lqtnudge1D) qtp (2:i1,2:j1,k)=qtp (2:i1,2:j1,k)-&
                   (qt0av (k)-(qtnudge1D (k,tn-1)*dtpn+qtnudge1D (k,tn)*dtmn))/currtnudge
           end if
         end if
+        !MS standard DALES 1D nudging for u,v,w
         if(lunudge1D  ) up  (2:i1,2:j1,k)=up  (2:i1,2:j1,k)-&
               (u0av  (k)-(unudge1D  (k,t)*dtp+unudge1D  (k,t+1)*dtm))/currtnudge
         if(lvnudge1D  ) vp  (2:i1,2:j1,k)=vp  (2:i1,2:j1,k)-&
