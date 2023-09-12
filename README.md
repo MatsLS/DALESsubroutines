@@ -5,7 +5,7 @@ In the thesis, a 3D-nudging method was added to DALES. Furthermore, the possibil
 In this document, it is described how to use the newly added inputs to 'namoptions' to use the different methods. The changes made to the subroutines are indicated by comments in these subroutines, which are always preluded by 'MS'.
 
 ## Nudging 
-*adapted subroutines: 'modnudge.f90'*
+*Adapted subroutines: 'modnudge.f90'*
 
 1D-nudging already existed in DALES, 3D-nudging was added. 3D-nudging is currently only applied to thl and qt. 1D-nudging requires an input file called 'nudge.inp.iexpnr', where iexpnr is the experiment number in namoptions.  
 This file should contain the desired vertical mean profiles at the desired times. This is standard DALES so will not be elaborated on here.  
@@ -36,7 +36,7 @@ ntnudge3D     = 12           # Amount of time points for which desired nudge fie
 The provided subroutine 'modnudge.f90' gives the nudging subroutine for general use. In 'modnudge_large.f90', the input file 'nudge.inp.iexpnr' became to large and was hardcoded to use two input files. This could be improved upon for later versions.
 
 ## Persistence or advection only method
-*adapted subroutines: 'modstartup.f90', 'modglobal.f90', 'tstep.f90'*
+*Adapted subroutines: 'modstartup.f90', 'modglobal.f90', 'tstep.f90'*
 
 Using the persistence method in DALES is straightforward. It needs an input file called 'advfield.inp.iexpnr', containing the fields of 'thl' and 'qt' to be advected. An example python script to create this file is given in 'input_Pers_or_RefCold.py'.
 So, the file contains:
@@ -56,7 +56,7 @@ ladvectonly=  .false.        # Set to true to use the persistence method, to fal
 ``
 
 ## Standard LES with reference fields
-*adapted subroutines: 'modstartup.f90', 'modglobal.f90'*
+*Adapted subroutines: 'modstartup.f90', 'modglobal.f90'*
 
 It is also possible to use regular LES runs, that start with the correct reference fields. For this, one must supply the initial fields of 'thl' and 'qt' in a file named: 'coldinifield.inp.iexpnr'. It is created in the same way as described for 'advfield.inp.iexpnr' above. Its only input in namoptions is given in the &RUN block:
 
@@ -67,7 +67,7 @@ lcoldstartfiles = .false.    # Set to true to use a regular LES run with thermod
 ``
 
 ## Printing LWP and SWD(down) at the surface
-*adapted subroutines: 'modtimestat.f90'*
+*Adapted subroutines: 'modtimestat.f90'*
 
 In this thesis, the functionality was added to DALES to print LWP and SWD(down) values at the surface for various points in the simulation. This was done to check these values against reference values, to find the accuracy of an experiment's forecast. In the end, it was not used. However, for completeness, a short description is given here. The added commands in 'namoptions':
 ``
