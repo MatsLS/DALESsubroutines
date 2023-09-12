@@ -8,8 +8,7 @@ In this document, it is described how to use the newly added inputs to 'namoptio
 *adapted subroutines: 'modnudge.f90'*
 
 1D-nudging already existed in DALES, 3D-nudging was added. 3D-nudging is currently only applied to thl and qt. 1D-nudging requires an input file called 'nudge.inp.iexpnr', where iexpnr is the experiment number in namoptions.
-This file should contain the desired vertical mean profiles at the desired times. This is standard DALES so will not be elaborated on here.
-
+This file should contain the desired vertical mean profiles at the desired times. This is standard DALES so will not be elaborated on here.  
 3D-nudging also requires an input file: 'nudge3D.inp.iexpnr'. This should be a binary Fortran file (see nudgeinputfiles.py for an example of how to create these).
 
 It should first contain an array that has all the points in time (in seconds) nudging should be done towards.
