@@ -9,6 +9,7 @@
 !! restart files also live in this module.
 !!  \author Chiel van Heerwaarden, Wageningen U.R.
 !!  \author Thijs Heus,MPI-M
+!!  \author Mats Steerneman (MS)
 !!  \todo documentation
 !!  \par Revision list
 !  This file is part of DALES.
@@ -71,8 +72,8 @@ contains
                                   ibas_prf,lambda_crit,iadv_mom,iadv_tke,iadv_thl,iadv_qt,iadv_sv,courant,peclet,ladaptive,author,&
                                   lnoclouds,lrigidlid,unudge,ntimedep,&
                                   solver_id, maxiter, tolerance, n_pre, n_post, precond, checknamelisterror, outdirs, output_prefix,&
-                                  ladvectonly,&
-                                  lcoldstartfiles
+                                  ladvectonly,& !MS: boolean for persistence method
+                                  lcoldstartfiles !MS: boolean for regular LES with reference initialization
     use modforces,         only : lforce_user
     use modsurfdata,       only : z0,ustin,wtsurf,wqsurf,wsvsurf,ps,thls,isurf
     use modsurface,        only : initsurface
@@ -104,7 +105,7 @@ contains
         trestart,irandom,randthl,randqt,krand,nsv,courant,peclet,ladaptive,author,&
         krandumin, krandumax, randu,&
         nprocx,nprocy,outdirs,&
-        lcoldstartfiles
+        lcoldstartfiles !MS: read new input
     namelist/DOMAIN/ &
         itot,jtot,kmax,&
         xsize,ysize,&
@@ -114,7 +115,7 @@ contains
         z0,ustin,wtsurf,wqsurf,wsvsurf,ps,thls,lmoist,isurf,chi_half,&
         lcoriol,lpressgrad,igrw_damp,geodamptime,lmomsubs,ltimedep,ltimedepuv,ltimedepsv,ntimedep,irad,timerad,iradiation,rad_ls,rad_longw,rad_shortw,rad_smoke,useMcICA,&
         rka,dlwtop,dlwbot,sw0,gc,reff,isvsmoke,lforce_user,lcloudshading,lrigidlid,unudge,&
-        ladvectonly
+        ladvectonly !MS: read new input
     namelist/DYNAMICS/ &
         llsadv,  lqlnr, lambda_crit, cu, cv, ibas_prf, iadv_mom, iadv_tke, iadv_thl, iadv_qt, iadv_sv, lnoclouds
     namelist/SOLVER/ &
@@ -220,6 +221,7 @@ contains
     call D_MPI_BCAST(lrigidlid  ,1,0,commwrld,mpierr)
     call D_MPI_BCAST(unudge     ,1,0,commwrld,mpierr)
 
+    !MS: broadcast new inputs
     call D_MPI_BCAST(ladvectonly,1,0,commwrld,mpierr)
     call D_MPI_BCAST(lcoldstartfiles,1,0,commwrld,mpierr)
 
@@ -396,15 +398,12 @@ contains
       'WARNING: You selected to use time dependent (ltimedep) and heterogeneous surface conditions (lhetero) at the same time'
     endif
 
-    if (ladvectonly) then
-      !wtsurf = 0
-      !wqsurf = 0
-      !iradiation = 0
+    if (ladvectonly) then !MS: persistence method warning message
       if (myid == 0) write(6,*)&
       'WARNING: You selected to use only advection in this run. This means all thermodynamics will be turned off.'
     endif
 
-    if (ladvectonly .and. lcoldstartfiles) then
+    if (ladvectonly .and. lcoldstartfiles) then !MS: stop the run, using both is not possible.
       stop 'You selected to use both advection only and initial cold start files. That is impossible, choose one.'
     endif
 
@@ -417,16 +416,15 @@ contains
                                   dqtdxls,dqtdyls,dqtdtls,dpdxl,dpdyl,&
                                   wfls,whls,ug,vg,uprof,vprof,thlprof, qtprof,e12prof, svprof,&
                                   v0av,u0av,qt0av,ql0av,thl0av,sv0av,exnf,exnh,presf,presh,initial_presf,initial_presh,rhof,&
-                                  thlpcar,thvh,thvf!,&
-                                  !thladvfield,qtadvfield
+                                  thlpcar,thvh,thvf
     use modglobal,         only : i1,i2,ih,j1,j2,jh,kmax,k1,dtmax,idtmax,dt,rdt,runtime,timeleft,tres,&
                                   rtimee,timee,ntrun,btime,dt_lim,nsv,&
                                   zf,dzf,dzh,rv,rd,cp,rlv,pref0,om23_gs,&
                                   ijtot,cu,cv,e12min,dzh,cexpnr,ifinput,lwarmstart,ltotruntime,itrestart,&
                                   trestart, ladaptive,llsadv,tnextrestart,longint,&
                                   itot,jtot,&
-                                  ladvectonly,imax,jmax,&
-                                  lcoldstartfiles
+                                  ladvectonly,imax,jmax,& !MS: needed for new functions
+                                  lcoldstartfiles !MS: needed for new functions
     use modsubgrid,        only : ekm,ekh
     use modsurfdata,       only : wsvsurf, &
                                   thls,tskin,tskinm,tsoil,tsoilm,phiw,phiwm,Wl,Wlm,thvs,qts,isurf,svs,obl,oblav,&
@@ -447,8 +445,8 @@ contains
 
     real, allocatable :: height(:), th0av(:)
     real(field_r), allocatable :: thv0(:,:,:)
-    real(field_r), allocatable :: thladvfield(:,:,:), qtadvfield(:,:,:)
-    real(field_r), allocatable :: thlcinfield(:,:,:), qtcinfield(:,:,:)
+    real(field_r), allocatable :: thladvfield(:,:,:), qtadvfield(:,:,:) !MS: arrays for input thermodynamic fields in persistence method
+    real(field_r), allocatable :: thlcinfield(:,:,:), qtcinfield(:,:,:) !MS: arrays for input thermodynamic fields in regular LES with reference initialization
 
     character(80) chmess
     character(50) :: filename
@@ -456,6 +454,7 @@ contains
     allocate (height(k1))
     allocate (th0av(k1))
     allocate(thv0(2-ih:i1+ih,2-jh:j1+jh,k1))
+    !MS: allocation of the new arrays
     allocate(thladvfield(itot,jtot,kmax))
     allocate(qtadvfield (itot,jtot,kmax))
     allocate(thlcinfield(itot,jtot,kmax))
@@ -572,8 +571,8 @@ contains
 
       krand  = min(krand,kmax)
       negval = .False. ! No negative perturbations for qt (negative moisture is non physical)
-      if (ladvectonly) krand = 0
-      if (lcoldstartfiles) krand = 0
+      if (ladvectonly) krand = 0 !MS: No initial randomization for ladvectonly!
+      if (lcoldstartfiles) krand = 0 !MS: No initial randomization for lcoldstartfiles!
       do k = 1,krand
         call randomnize(qtm ,k,randqt ,irandom,ih,jh,negval)
         call randomnize(qt0 ,k,randqt ,irandom,ih,jh,negval)
@@ -584,34 +583,37 @@ contains
         call randomnize(thl0,k,randthl,irandom,ih,jh,negval)
       end do
 
-      if (ladvectonly) then
+      if (ladvectonly) then !MS: No initial randomization for ladvectonly!
         krandumin = 1
         krandumax = 0
         if (myid==0) then
-          inquire(file='advfield.inp.'//cexpnr, exist=file_exists)
-          if (.not. file_exists) then
-            write(6,*) 'The input file for the initial fields to be advected ', 'advfield.inp.'//cexpnr, ' was not found.'
+          inquire(file='advfield.inp.'//cexpnr, exist=file_exists) !MS: check if initial fields for persistence method are given
+          if (.not. file_exists) then !MS: if not, stop simulation and print message
+            write(6,*) 'The input file for the initial fields to be advected ', 'advfield.inp.'//cexpnr, ' was not found.' 
             STOP
           end if
-          if (file_exists) then
+          if (file_exists) then !MS: if the file exists, read it.
             open(ifinput,file='advfield.inp.'//cexpnr,form='unformatted')
         
-            read(ifinput) thladvfield
-            read(ifinput) qtadvfield
+            read(ifinput) thladvfield !MS: read thl
+            read(ifinput) qtadvfield !MS: read qt
 
             close(ifinput)
 
           end if
         end if
+        !MS: broadcast persitence method initial thermodynamic fields
         call D_MPI_BCAST(thladvfield,itot*jtot*kmax,0,comm3d,mpierr)
         call D_MPI_BCAST(qtadvfield ,itot*jtot*kmax,0,comm3d,mpierr)
 
+        !MS: compute the first and last i and j index for each processor.
         is = myidx * imax + 1
         ie = is + imax - 1
 
         js = myidy * jmax + 1
         je = js + jmax - 1
 
+        !MS: set thl0, thlm, qt0, qtm at each i,j,k equal to the read fields
         do k=1,kmax
           do j=1,jtot
             do i=1,itot
@@ -625,36 +627,39 @@ contains
             end do
           end do
         end do
-      end if !end ladvectonly
+      end if !MS: end ladvectonly
 
-      if (lcoldstartfiles) then
+      if (lcoldstartfiles) then !MS: No initial randomization for lcoldstartfiles!
         krandumin = 1
         krandumax = 0
         if (myid==0) then
-          inquire(file='coldinifield.inp.'//cexpnr, exist=file_exists)
-          if (.not. file_exists) then
+          inquire(file='coldinifield.inp.'//cexpnr, exist=file_exists) !MS: check if initial fields for regular LES reference field initialization method are given
+          if (.not. file_exists) then !MS: if not, stop simulation and print message
             write(6,*) 'The input file for the initial fields to be advected ', 'coldinifield.inp.'//cexpnr, ' was not found.'
             STOP
           end if
-          if (file_exists) then
+          if (file_exists) then !MS: if the file exists, read it.
             open(ifinput,file='coldinifield.inp.'//cexpnr,form='unformatted')
 
-            read(ifinput) thlcinfield
-            read(ifinput) qtcinfield
+            read(ifinput) thlcinfield !MS: read thl
+            read(ifinput) qtcinfield !MS: read qt
 
             close(ifinput)
 
           end if
         end if
+        !MS: broadcast initial thermodynamic fields
         call D_MPI_BCAST(thlcinfield,itot*jtot*kmax,0,comm3d,mpierr)
         call D_MPI_BCAST(qtcinfield ,itot*jtot*kmax,0,comm3d,mpierr)
 
+        !MS: compute the first and last i and j index for each processor.
         is = myidx * imax + 1
         ie = is + imax - 1
 
         js = myidy * jmax + 1
         je = js + jmax - 1
 
+        !MS: set thl0, thlm, qt0, qtm at each i,j,k equal to the read fields
         do k=1,kmax
           do j=1,jtot
             do i=1,itot
@@ -668,7 +673,7 @@ contains
             end do
           end do
         end do
-      end if !end lcoldstartfiles
+      end if !MS: end lcoldstartfiles
 
       do k=krandumin,krandumax
         call randomnize(um  ,k,randu  ,irandom,ih,jh,negval)
