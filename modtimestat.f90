@@ -64,9 +64,9 @@ save
   real   :: cc, wmax, qlmax
   real   :: qlint, qtint, qrint
   logical:: store_zi = .false.
-  logical:: llwp_pos = .false.
+  logical:: llwp_pos = .false. !MS: boolean to print LWP and SWD(down) in output files
 
-  real   :: ips1,ips2,ips3,ips4,jps1,jps2,jps3,jps4
+  real   :: ips1,ips2,ips3,ips4,jps1,jps2,jps3,jps4 !MS: positions to print LWP and SWD(down)
 
   !Variables for heterogeneity
   real, allocatable :: u0av_patch (:,:)     ! patch averaged um    at full level
@@ -115,6 +115,7 @@ contains
     call D_MPI_BCAST(iblh_meth  ,1,0,comm3d,mpierr)
     call D_MPI_BCAST(iblh_var   ,1,0,comm3d,mpierr)
     call D_MPI_BCAST(blh_nsamp  ,1,0,comm3d,mpierr)
+    !MS: broadcast inputs for LWP and SWD(down) printing
     call D_MPI_BCAST(llwp_pos  ,1,0,comm3d,mpierr)
     call D_MPI_BCAST(ips1  ,1,0,comm3d,mpierr)
     call D_MPI_BCAST(ips2  ,1,0,comm3d,mpierr)
@@ -184,7 +185,7 @@ contains
                '      thls        z0        wthls      wthvs      wqls '
           close(ifoutput)
           !tmrad
-          if (llwp_pos) then
+          if (llwp_pos) then !MS: create output file for each position, with column names as below
             open (ifoutput,file='tmradps1.'//cexpnr,status='replace',position='append')
             write(ifoutput,'(2a)') &
                  '#  time      LWP_ps1      SWD_ps1'
@@ -579,21 +580,23 @@ contains
       close(ifoutput)
     end if
 
+    !MS: compute the first and last i and j index for each processor.
     is = myidx * imax + 1
     ie = is + imax - 1
 
     js = myidy * jmax + 1
     je = js + jmax - 1
-    
+
+    !MS: compute LWP and SWD(down) for each position and print in the according output file
     if (llwp_pos) then
-      if (ips1 >= is .and. ips1 <= ie .and. jps1 >= js .and. jps1 <= je) then
+      if (ips1 >= is .and. ips1 <= ie .and. jps1 >= js .and. jps1 <= je) then !MS: check if i,j in range current processor
         LWP1 = 0.0
-        do k=1,kmax
+        do k=1,kmax !MS: calculate LWP
           LWP1 = LWP1 + ql0(ips1-is+2,jps1-js+2,k)*rhof(k)*dzf(k)
         end do
-        SWD1 = swd(ips1-is+2,jps1-js+2,1)
-        open (ifoutput,file='tmradps1.'//cexpnr,position='append')
-        write( ifoutput,'(f10.2,2e13.4)',advance='no') &
+        SWD1 = swd(ips1-is+2,jps1-js+2,1) !MS: call SWD
+        open (ifoutput,file='tmradps1.'//cexpnr,position='append') !MS: open output file
+        write( ifoutput,'(f10.2,2e13.4)',advance='no') & !MS write outputs to file
               rtimee,&
               LWP1,&
               SWD1
