@@ -7,7 +7,8 @@
 !!  Nudges theta_l and q_t profiles to the initial profiles on a timescale tnudget1d
 !!  Also nudges theta_l and q_t (possibility for u_i) to prescribed fields on a timescale tnudge3d
 !>
-!!  \author Thijs Heus,MPI-M, Mats Steerneman (MS)
+!!  \author Thijs Heus,MPI-M, 
+!!  \author Mats Steerneman (MS)
 !!  \par Revision list
 !!  \todo Documentation
 !  This file is part of DALES.
