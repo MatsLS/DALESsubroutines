@@ -1,4 +1,4 @@
-# DALESsubroutines
+# DALES subroutines
 This repository contains all the subroutines that were changed for the master's thesis: 'Data assimilation of observed cloud fields in LES model' by Mats Steerneman, supervised by Stephan de Roode.  
 It also contains Python scripts used to create DALES input files. Note that these are meant more as an example and will likely need to be changed for use by others.  
 In the thesis, a 3D-nudging method was added to DALES. Furthermore, the possibility of running DALES using only advection was added, as well as a way to start a regular LES run using pre-described fields.  
